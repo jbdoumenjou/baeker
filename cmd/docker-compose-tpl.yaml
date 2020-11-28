@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  traefik:
+    image: traefik:v2.3.4
+    ports:{{ range .Ports }}
+      - '{{ . }}'{{ end }}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:{{ range .Labels }}
+      - --{{ . }}{{ end }}
