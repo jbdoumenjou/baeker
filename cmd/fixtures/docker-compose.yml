@@ -11,4 +11,4 @@ services:
     command:
       - --entrypoints.web.address=:8000
       - --entrypoints.websecure.address=:8443
-      - --providers.docker=true
+      - --providers.docker

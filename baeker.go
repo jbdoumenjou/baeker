@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -42,7 +41,7 @@ func main() {
 	case inDockerCompose:
 		exportToDockerCompose()
 	case asKubernetesLoadBalancer:
-		fmt.Printf("%s To implement\n", answers.Provider)
+		exportToKubernetesCRD()
 	default:
 		fmt.Printf("%s not supported", answers.Provider)
 	}
@@ -53,18 +52,44 @@ func exportToDockerCompose() {
 		err := os.Mkdir("out", 0755)
 		if err != nil && !os.IsExist(err) {
 			fmt.Printf("Cannot create directory to export conf: %v", err)
+			return
 		}
 	}
 
 	f, err := os.Create("./out/docker-compose.yml")
 	if err != nil {
-		log.Println("create file: ", err)
+		fmt.Println("create file: ", err)
 		return
 	}
 
-	err = cmd.ExportConf(cmd.GetDefaultConf("docker"), "./cmd/docker-compose-tpl.yaml", f)
+	err = cmd.ExportConf(cmd.GetDefaultConf("docker"), "./cmd/docker-compose-tpl.yml", f)
 	if err != nil {
 		fmt.Printf("Didn't succeed to export the configuration in docker-compose file: %v", err)
+		return
+	}
+
+	fmt.Printf("Successfully exported Traefik configuration in %s", f.Name())
+}
+
+func exportToKubernetesCRD() {
+	if _, err := os.Stat("output"); os.IsNotExist(err) {
+		err := os.Mkdir("out", 0755)
+		if err != nil && !os.IsExist(err) {
+			fmt.Printf("Cannot create directory to export conf: %v", err)
+			return
+		}
+	}
+
+	f, err := os.Create("./out/traefik-lb-svc.yml")
+	if err != nil {
+		fmt.Println("create file: ", err)
+		return
+	}
+
+	err = cmd.ExportConf(cmd.GetDefaultConf("kubernetes"), "./cmd/traefik-lb-svc-tpl.yml", f)
+	if err != nil {
+		fmt.Printf("Didn't succeed to export in a kubernetes configuration file: %v", err)
+		return
 	}
 
 	fmt.Printf("Successfully exported Traefik configuration in %s", f.Name())

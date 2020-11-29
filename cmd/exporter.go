@@ -12,11 +12,17 @@ import (
 	"github.com/traefik/paerser/parser"
 	"github.com/traefik/traefik/v2/pkg/config/static"
 	"github.com/traefik/traefik/v2/pkg/provider/docker"
+	"github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd"
 )
 
 type traefikConf struct {
 	Labels []string
-	Ports  []string
+	Ports  []EntryPoint
+}
+
+type EntryPoint struct {
+	Name  string
+	Value string
 }
 
 // GetDefaultConf generate a default configuration for a given provider
@@ -28,11 +34,17 @@ func GetDefaultConf(provider string) static.Configuration {
 		},
 	}
 
+	if defaultConf.Providers == nil {
+		defaultConf.Providers = &static.Providers{}
+	}
+
 	if provider == "docker" {
-		defaultConf.Providers = &static.Providers{
-			Docker: &docker.Provider{},
-		}
+		defaultConf.Providers.Docker = &docker.Provider{}
 		defaultConf.Providers.Docker.SetDefaults()
+	}
+
+	if provider == "kubernetes" {
+		defaultConf.Providers.KubernetesCRD = &crd.Provider{}
 	}
 
 	return defaultConf
@@ -87,11 +99,17 @@ func getLabels(conf static.Configuration) ([]string, error) {
 	}
 
 	// TODO refactor, very naive approach
-	if conf.Providers != nil && conf.Providers.Docker != nil {
-		cleanedLabels = append(cleanedLabels, "providers.docker=true")
+	if conf.Providers != nil {
+		if conf.Providers.Docker != nil {
+			cleanedLabels = append(cleanedLabels, "providers.docker")
+		}
+		if conf.Providers.KubernetesCRD != nil {
+			cleanedLabels = append(cleanedLabels, "providers.kubernetescrd")
+		}
+
 	}
 
-	// To the result consistent.
+	// To keep the result consistent.
 	sort.Strings(cleanedLabels)
 	return cleanedLabels, nil
 }
@@ -105,24 +123,34 @@ func getDefaultsLabel(conf static.Configuration) (map[string]string, error) {
 			defaultConf.Providers.Docker = &docker.Provider{}
 			defaultConf.Providers.Docker.SetDefaults()
 		}
+
+		if conf.Providers.KubernetesCRD != nil {
+			defaultConf.Providers.KubernetesCRD = &crd.Provider{}
+		}
 	}
 	defaultLabels, err := parser.Encode(defaultConf, "")
 
 	return defaultLabels, err
 }
 
-func getPorts(entryPoints static.EntryPoints) ([]string, error) {
-	ports := []string{}
+func getPorts(entryPoints static.EntryPoints) ([]EntryPoint, error) {
+	ports := []EntryPoint{}
 
-	for _, entrypoint := range entryPoints {
+	for name, entrypoint := range entryPoints {
 		_, port, err := net.SplitHostPort(entrypoint.Address)
 		if err != nil {
 			return ports, fmt.Errorf("cannot process ports :%w", err)
 		}
 
-		ports = append(ports, fmt.Sprintf("%s:%s", port, port))
+		ports = append(ports, EntryPoint{
+			Name:  name,
+			Value: port,
+		})
 	}
 
-	sort.Strings(ports)
+	sort.Slice(ports, func(i, j int) bool {
+		return ports[i].Name < ports[j].Name
+	})
+
 	return ports, nil
 }

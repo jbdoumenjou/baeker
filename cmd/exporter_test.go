@@ -12,17 +12,39 @@ import (
 )
 
 func TestExportConf(t *testing.T) {
+
 	testCases := []struct {
-		desc     string
-		conf     static.Configuration
-		expected string
-		err      bool
+		desc          string
+		conf          static.Configuration
+		templatePath  string
+		expected      string
+		expectedError bool
 	}{
 		{
-			"Default docker configuration",
-			GetDefaultConf("docker"),
-			"docker-compose.yml",
-			false,
+			desc:          "unknown template",
+			conf:          GetDefaultConf("docker"),
+			templatePath:  "unknown",
+			expectedError: true,
+		},
+		{
+			desc: "bad entrypoint syntax",
+			conf: static.Configuration{EntryPoints: map[string]*static.EntryPoint{
+				"test": {Address: "bad syntax"},
+			}},
+			templatePath:  "docker-compose-tpl.yml",
+			expectedError: true,
+		},
+		{
+			desc:         "Default docker configuration",
+			conf:         GetDefaultConf("docker"),
+			templatePath: "docker-compose-tpl.yml",
+			expected:     "docker-compose.yml",
+		},
+		{
+			desc:         "Default kubernetes configuration",
+			conf:         GetDefaultConf("kubernetes"),
+			templatePath: "traefik-lb-svc-tpl.yml",
+			expected:     "traefik-lb-svc.yml",
 		},
 	}
 
@@ -31,8 +53,8 @@ func TestExportConf(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
 			exportedConf := new(bytes.Buffer)
-			err := ExportConf(test.conf, "./docker-compose-tpl.yaml", exportedConf)
-			if test.err {
+			err := ExportConf(test.conf, test.templatePath, exportedConf)
+			if test.expectedError {
 				assert.Error(t, err)
 				return
 			}
