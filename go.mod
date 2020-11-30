@@ -8,7 +8,6 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/traefik/paerser v0.1.1
 	github.com/traefik/traefik/v2 v2.3.4
-	gotest.tools v2.2.0+incompatible
 )
 
 // Docker v19.03.6

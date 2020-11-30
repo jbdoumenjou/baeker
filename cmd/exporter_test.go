@@ -12,6 +12,7 @@ import (
 )
 
 func TestExportConf(t *testing.T) {
+	t.Parallel()
 
 	testCases := []struct {
 		desc          string
@@ -52,6 +53,7 @@ func TestExportConf(t *testing.T) {
 		test := test
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
+
 			exportedConf := new(bytes.Buffer)
 			err := ExportConf(test.conf, test.templatePath, exportedConf)
 			if test.expectedError {
@@ -66,5 +68,4 @@ func TestExportConf(t *testing.T) {
 			assert.Equal(t, string(expectedConf), exportedConf.String())
 		})
 	}
-
 }

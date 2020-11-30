@@ -17,15 +17,15 @@ import (
 
 type traefikConf struct {
 	Labels []string
-	Ports  []EntryPoint
+	Ports  []entryPoint
 }
 
-type EntryPoint struct {
+type entryPoint struct {
 	Name  string
 	Value string
 }
 
-// GetDefaultConf generate a default configuration for a given provider
+// GetDefaultConf generate a default configuration for a given provider.
 func GetDefaultConf(provider string) static.Configuration {
 	defaultConf := static.Configuration{
 		EntryPoints: static.EntryPoints{
@@ -54,37 +54,37 @@ func GetDefaultConf(provider string) static.Configuration {
 func ExportConf(conf static.Configuration, templatePath string, output io.Writer) error {
 	tmpl, err := template.New(path.Base(templatePath)).ParseFiles(templatePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create the template: %w", err)
 	}
 
 	labels, err := getLabels(conf)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to extract label from static configuration: %w", err)
 	}
 
 	ports, err := getPorts(conf.EntryPoints)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get ports from static configuration: %w", err)
 	}
 
 	err = tmpl.Execute(output, traefikConf{Labels: labels, Ports: ports})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to execute the template: %w", err)
 	}
 
 	return nil
 }
 
 func getLabels(conf static.Configuration) ([]string, error) {
-	cleanedLabels := []string{}
+	var cleanedLabels []string
 	labels, err := parser.Encode(conf, "")
 	if err != nil {
-		return cleanedLabels, err
+		return cleanedLabels, fmt.Errorf("failed to parse the configuration: %w", err)
 	}
 
 	defaultLabels, err := getDefaultsLabel(conf)
 	if err != nil {
-		return cleanedLabels, err
+		return cleanedLabels, fmt.Errorf("failed to get the default labels: %w", err)
 	}
 
 	for key, value := range labels {
@@ -106,7 +106,6 @@ func getLabels(conf static.Configuration) ([]string, error) {
 		if conf.Providers.KubernetesCRD != nil {
 			cleanedLabels = append(cleanedLabels, "providers.kubernetescrd")
 		}
-
 	}
 
 	// To keep the result consistent.
@@ -128,13 +127,12 @@ func getDefaultsLabel(conf static.Configuration) (map[string]string, error) {
 			defaultConf.Providers.KubernetesCRD = &crd.Provider{}
 		}
 	}
-	defaultLabels, err := parser.Encode(defaultConf, "")
 
-	return defaultLabels, err
+	return parser.Encode(defaultConf, "")
 }
 
-func getPorts(entryPoints static.EntryPoints) ([]EntryPoint, error) {
-	ports := []EntryPoint{}
+func getPorts(entryPoints static.EntryPoints) ([]entryPoint, error) {
+	var ports []entryPoint
 
 	for name, entrypoint := range entryPoints {
 		_, port, err := net.SplitHostPort(entrypoint.Address)
@@ -142,7 +140,7 @@ func getPorts(entryPoints static.EntryPoints) ([]EntryPoint, error) {
 			return ports, fmt.Errorf("cannot process ports :%w", err)
 		}
 
-		ports = append(ports, EntryPoint{
+		ports = append(ports, entryPoint{
 			Name:  name,
 			Value: port,
 		})

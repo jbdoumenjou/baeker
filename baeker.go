@@ -13,25 +13,23 @@ const (
 	asKubernetesLoadBalancer = "As a Kubernetes Load Balancer"
 )
 
-var qs = []*survey.Question{
-	{
-		Name: "Provider",
-		Prompt: &survey.Select{
-			Message: "Where do you want to define Traefik?",
-			Options: []string{inDockerCompose, asKubernetesLoadBalancer},
-			Default: inDockerCompose,
-			Help:    "https://doc.traefik.io/traefik/v2.3/providers/overview/#supported-providers",
-		},
-	},
-}
-
 func main() {
 	answers := struct {
 		Provider string `survey:"provider"`
 	}{}
 
 	// perform the questions
-	err := survey.Ask(qs, &answers)
+	err := survey.Ask([]*survey.Question{
+		{
+			Name: "Provider",
+			Prompt: &survey.Select{
+				Message: "Where do you want to define Traefik?",
+				Options: []string{inDockerCompose, asKubernetesLoadBalancer},
+				Default: inDockerCompose,
+				Help:    "https://doc.traefik.io/traefik/v2.3/providers/overview/#supported-providers",
+			},
+		},
+	}, &answers)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -49,7 +47,7 @@ func main() {
 
 func exportToDockerCompose() {
 	if _, err := os.Stat("output"); os.IsNotExist(err) {
-		err := os.Mkdir("out", 0755)
+		err := os.Mkdir("out", 0750)
 		if err != nil && !os.IsExist(err) {
 			fmt.Printf("Cannot create directory to export conf: %v", err)
 			return
@@ -73,7 +71,7 @@ func exportToDockerCompose() {
 
 func exportToKubernetesCRD() {
 	if _, err := os.Stat("output"); os.IsNotExist(err) {
-		err := os.Mkdir("out", 0755)
+		err := os.Mkdir("out", 0750)
 		if err != nil && !os.IsExist(err) {
 			fmt.Printf("Cannot create directory to export conf: %v", err)
 			return
