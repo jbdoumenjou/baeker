@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: traefik-controller
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: traefik
+  labels:
+    app: traefik-lb
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traefik-lb
+  template:
+    metadata:
+      labels:
+        app: traefik-lb
+    spec:
+      serviceAccountName: traefik-controller
+      containers:
+        - name: traefik
+          image: traefik:v2.3
+          args:{{ range .Labels }}
+            - --{{ . }}{{ end }}
+          ports:{{ range $port := .Ports }}
+            - name: {{ $port.Name }}
+              containerPort: {{ $port.Value }}{{ end }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+spec:
+  selector:
+    app: traefik-lb
+  ports:{{ range $port := .Ports }}
+    - protocol: TCP
+      port: {{ $port.Value }}
+      targetPort: {{ $port.Value }}
+      name: {{ $port.Name }}{{ end }}
+  type: LoadBalancer
