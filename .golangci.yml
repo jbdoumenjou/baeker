@@ -29,6 +29,9 @@ linters:
     - nlreturn
     - godox
     - exhaustivestruct
+    - gomoddirectives
+    - forbidigo
+    - cyclop
 
 issues:
   exclude-use-default: false

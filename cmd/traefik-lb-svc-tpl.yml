@@ -24,7 +24,7 @@ spec:
       serviceAccountName: traefik-controller
       containers:
         - name: traefik
-          image: traefik:v2.3
+          image: traefik:v2.4
           args:{{ range .Labels }}
             - --{{ . }}{{ end }}
           ports:{{ range $port := .Ports }}
