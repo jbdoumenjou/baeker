@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/traefik/traefik/v2/pkg/provider/file"
+
 	"github.com/traefik/paerser/parser"
 	"github.com/traefik/traefik/v2/pkg/config/static"
 	"github.com/traefik/traefik/v2/pkg/provider/docker"
@@ -28,23 +30,23 @@ type entryPoint struct {
 // GetDefaultConf generate a default configuration for a given provider.
 func GetDefaultConf(provider string) static.Configuration {
 	defaultConf := static.Configuration{
+		Providers: &static.Providers{},
 		EntryPoints: static.EntryPoints{
 			"web":       {Address: ":8000"},
 			"websecure": {Address: ":8443"},
 		},
 	}
 
-	if defaultConf.Providers == nil {
-		defaultConf.Providers = &static.Providers{}
-	}
-
-	if provider == "docker" {
+	switch provider {
+	case "docker":
 		defaultConf.Providers.Docker = &docker.Provider{}
 		defaultConf.Providers.Docker.SetDefaults()
-	}
-
-	if provider == "kubernetes" {
+	case "kubernetes":
 		defaultConf.Providers.KubernetesCRD = &crd.Provider{}
+	case "toml":
+		defaultConf.Providers.File = &file.Provider{}
+		defaultConf.Providers.File.SetDefaults()
+		defaultConf.Providers.File.Directory = "/conf"
 	}
 
 	return defaultConf
@@ -114,6 +116,12 @@ func getLabels(conf static.Configuration) ([]string, error) {
 }
 
 func getDefaultsLabel(conf static.Configuration) (map[string]string, error) {
+	defaultConf := getEmptyConf(conf)
+
+	return parser.Encode(defaultConf, "")
+}
+
+func getEmptyConf(conf static.Configuration) *static.Configuration {
 	defaultConf := &static.Configuration{}
 	if conf.Providers != nil {
 		defaultConf.Providers = &static.Providers{}
@@ -126,9 +134,14 @@ func getDefaultsLabel(conf static.Configuration) (map[string]string, error) {
 		if conf.Providers.KubernetesCRD != nil {
 			defaultConf.Providers.KubernetesCRD = &crd.Provider{}
 		}
+
+		if conf.Providers.File != nil {
+			defaultConf.Providers.File = &file.Provider{}
+			defaultConf.Providers.File.SetDefaults()
+		}
 	}
 
-	return parser.Encode(defaultConf, "")
+	return defaultConf
 }
 
 func getPorts(entryPoints static.EntryPoints) ([]entryPoint, error) {

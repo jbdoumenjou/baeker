@@ -1,0 +1,9 @@
+[entryPoints]
+    [entryPoints.web]
+        address = ":8000"
+    [entryPoints.websecure]
+        address = ":8443"
+
+[providers]
+    [providers.file]
+        directory = "/conf"

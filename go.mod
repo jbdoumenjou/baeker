@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.2.3
+	github.com/BurntSushi/toml v0.3.1
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/traefik/paerser v0.1.1
