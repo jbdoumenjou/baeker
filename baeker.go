@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jbdoumenjou/baeker/cmd/exporter"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/jbdoumenjou/baeker/cmd"
 )
@@ -56,15 +58,18 @@ func exportToDockerCompose() {
 
 	f, err := os.Create("./out/docker-compose.yml")
 	if err != nil {
-		fmt.Println("create file: ", err)
+		fmt.Println("cannot create file: ", err)
 		return
 	}
 
-	err = cmd.ExportConf(cmd.GetDefaultConf("docker"), "./cmd/docker-compose-tpl.yml", f)
+	builder, err := cmd.NewStaticConfBuilder().AddDockerProvider()
 	if err != nil {
-		fmt.Printf("Didn't succeed to export the configuration in docker-compose file: %v", err)
-		return
+		fmt.Printf("cannot create static configuration: %s", err)
 	}
+
+	builder.AddEntryPoint("web", ":8000")
+	builder.AddEntryPoint("websecure", ":8443")
+	exporter.ExportDocker(builder.GetConfiguration(), "./cmd/exporter/docker-compose-tpl.yml", f)
 
 	fmt.Printf("Successfully exported Traefik configuration in %s", f.Name())
 }
@@ -84,11 +89,14 @@ func exportToKubernetesCRD() {
 		return
 	}
 
-	err = cmd.ExportConf(cmd.GetDefaultConf("kubernetes"), "./cmd/traefik-lb-svc-tpl.yml", f)
+	builder, err := cmd.NewStaticConfBuilder().AddKubernetesProvider()
 	if err != nil {
-		fmt.Printf("Didn't succeed to export in a kubernetes configuration file: %v", err)
-		return
+		fmt.Printf("cannot create static configuration: %s", err)
 	}
+
+	builder.AddEntryPoint("web", ":8000")
+	builder.AddEntryPoint("websecure", ":8443")
+	exporter.ExportDocker(builder.GetConfiguration(), "./cmd/exporter/traefik-lb-svc-tpl.yml", f)
 
 	fmt.Printf("Successfully exported Traefik configuration in %s", f.Name())
 }

@@ -66,7 +66,7 @@ type entryPoint struct {
 	Value string
 }
 
-func getDefaultsLabel(conf static.Configuration) (map[string]string, error) {
+func getDefaultsLabel(conf *static.Configuration) (map[string]string, error) {
 	defaultConf := &static.Configuration{}
 	if conf.Providers != nil {
 		defaultConf.Providers = &static.Providers{}
@@ -83,7 +83,7 @@ func getDefaultsLabel(conf static.Configuration) (map[string]string, error) {
 	return parser.Encode(defaultConf, "")
 }
 
-func getLabels(conf static.Configuration) ([]string, error) {
+func getLabels(conf *static.Configuration) ([]string, error) {
 	var cleanedLabels []string
 	labels, err := parser.Encode(conf, "")
 	if err != nil {
@@ -144,7 +144,7 @@ func getPorts(entryPoints static.EntryPoints) ([]entryPoint, error) {
 	return ports, nil
 }
 
-func ExportKubernetes(config static.Configuration, templatePath string, output io.Writer) error {
+func ExportKubernetes(config *static.Configuration, templatePath string, output io.Writer) error {
 	tmpl, err := template.New(path.Base(templatePath)).ParseFiles(templatePath)
 	if err != nil {
 		return fmt.Errorf("failed to create the template: %w", err)
@@ -169,7 +169,7 @@ func ExportKubernetes(config static.Configuration, templatePath string, output i
 	return nil
 }
 
-func ExportDocker(config static.Configuration, templatePath string, output io.Writer) error {
+func ExportDocker(config *static.Configuration, templatePath string, output io.Writer) error {
 	tmpl, err := template.New(path.Base(templatePath)).ParseFiles(templatePath)
 	if err != nil {
 		return fmt.Errorf("failed to create the template: %w", err)

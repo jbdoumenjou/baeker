@@ -9,6 +9,10 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/traefik/paerser v0.1.1
 	github.com/traefik/traefik/v2 v2.3.4
+	gopkg.in/yaml.v2 v2.3.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	k8s.io/apimachinery v0.18.2 // indirect
+	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
 // Docker v19.03.6
