@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jbdoumenjou/baeker/cmd/exporter"
-
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/jbdoumenjou/baeker/cmd"
 )
@@ -69,9 +67,9 @@ func exportToDockerCompose() {
 
 	builder.AddEntryPoint("web", ":8000")
 	builder.AddEntryPoint("websecure", ":8443")
-	exporter.ExportDocker(builder.GetConfiguration(), "./cmd/exporter/docker-compose-tpl.yml", f)
+	cmd.ExportDocker(builder.GetConfiguration(), "./cmd/exporter/docker-compose-tpl.yml", f)
 
-	fmt.Printf("Successfully exported Traefik configuration in %s", f.Name())
+	fmt.Printf("Successfully exported Traefik configuration in %s\n", f.Name())
 }
 
 func exportToKubernetesCRD() {
@@ -96,7 +94,7 @@ func exportToKubernetesCRD() {
 
 	builder.AddEntryPoint("web", ":8000")
 	builder.AddEntryPoint("websecure", ":8443")
-	exporter.ExportDocker(builder.GetConfiguration(), "./cmd/exporter/traefik-lb-svc-tpl.yml", f)
+	cmd.ExportDocker(builder.GetConfiguration(), "./cmd/exporter/traefik-lb-svc-tpl.yml", f)
 
-	fmt.Printf("Successfully exported Traefik configuration in %s", f.Name())
+	fmt.Printf("Successfully exported Traefik configuration in %s\n", f.Name())
 }

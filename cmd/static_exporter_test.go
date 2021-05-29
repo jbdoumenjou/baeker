@@ -1,50 +1,110 @@
 package cmd
 
 import (
-	"fmt"
+	"bytes"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
+	"github.com/traefik/traefik/v2/pkg/provider/docker"
+
+	"github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd"
+
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	yaml3 "gopkg.in/yaml.v2"
-	yaml2 "gopkg.in/yaml.v3"
-	json2 "k8s.io/apimachinery/pkg/util/json"
-	"sigs.k8s.io/yaml"
+	"github.com/traefik/traefik/v2/pkg/config/static"
+	"github.com/traefik/traefik/v2/pkg/types"
 )
 
-type A struct {
-	ValueA int `json:"a"`
+func TestTOMLExport(t *testing.T) {
+	configuration := static.Configuration{
+		Log: &types.TraefikLog{
+			Level: "DEBUG",
+		},
+	}
+	exportedConf := new(bytes.Buffer)
+	err := ExportToml(configuration, exportedConf)
+	require.NoError(t, err)
+
+	expectedConf, err := ioutil.ReadFile(filepath.FromSlash("./fixtures/static.toml"))
+
+	require.NoError(t, err)
+
+	assert.Equal(t, string(expectedConf), exportedConf.String())
 }
 
-type Ab struct {
-	ValueAb int `json:"ab"`
+func TestYAMLExport(t *testing.T) {
+	configuration := static.Configuration{
+		Log: &types.TraefikLog{
+			Level: "DEBUG",
+		},
+	}
+	exportedConf := new(bytes.Buffer)
+	err := ExportYaml(configuration, exportedConf)
+	require.NoError(t, err)
+
+	expectedConf, err := ioutil.ReadFile(filepath.FromSlash("./fixtures/static.yml"))
+
+	require.NoError(t, err)
+
+	assert.Equal(t, string(expectedConf), exportedConf.String())
 }
 
-type B struct {
-	A  `json:",inline" yaml:",inline"`
-	Ab `json:""`
-	M  map[string]string `json:",inline" yaml:",inline"`
+func TestCLIExport(t *testing.T) {
+	configuration := &static.Configuration{
+		Log: &types.TraefikLog{
+			Level: "DEBUG",
+		},
+	}
+	exportedConf := new(bytes.Buffer)
+	err := ExportCLI(configuration, exportedConf)
+	require.NoError(t, err)
+
+	expectedConf, err := ioutil.ReadFile(filepath.FromSlash("./fixtures/static.cli"))
+
+	require.NoError(t, err)
+
+	assert.Equal(t, string(expectedConf), exportedConf.String())
 }
 
-func Test_Gopkg(t *testing.T) {
-	b := &B{A: A{4}, Ab: Ab{42}, M: map[string]string{"one": "un"}}
-
-	bytes, err := yaml2.Marshal(b)
+func TestKubernetesExport(t *testing.T) {
+	configuration := &static.Configuration{
+		EntryPoints: map[string]*static.EntryPoint{
+			"web":       {Address: ":8000"},
+			"websecure": {Address: ":8443"},
+		},
+		Providers: &static.Providers{
+			KubernetesCRD: &crd.Provider{},
+		},
+	}
+	exportedConf := new(bytes.Buffer)
+	err := ExportKubernetes(configuration, "traefik-lb-svc-tpl.yml", exportedConf)
 	require.NoError(t, err)
-	fmt.Println("With gopkg.in/yaml.v3")
-	fmt.Printf("%s\n", string(bytes))
 
-	bytes, err = yaml3.Marshal(b)
-	require.NoError(t, err)
-	fmt.Println("With gopkg.in/yaml.v2")
-	fmt.Printf("%s\n", string(bytes))
+	expectedConf, err := ioutil.ReadFile(filepath.FromSlash("./fixtures/traefik-lb-svc.yml"))
 
-	fmt.Println("With sigs.k8s.io/yaml")
-	bytes, err = yaml.Marshal(b)
 	require.NoError(t, err)
-	fmt.Printf("%s\n", string(bytes))
 
-	fmt.Println("With apimachinery json")
-	bytes, err = json2.Marshal(b)
+	assert.Equal(t, string(expectedConf), exportedConf.String())
+}
+
+func TestDockerExport(t *testing.T) {
+	configuration := &static.Configuration{
+		EntryPoints: map[string]*static.EntryPoint{
+			"web":       {Address: ":8000"},
+			"websecure": {Address: ":8443"},
+		},
+		Providers: &static.Providers{
+			Docker: &docker.Provider{},
+		},
+	}
+	exportedConf := new(bytes.Buffer)
+	err := ExportKubernetes(configuration, "docker-compose-tpl.yml", exportedConf)
 	require.NoError(t, err)
-	fmt.Printf("%s\n", string(bytes))
+
+	expectedConf, err := ioutil.ReadFile(filepath.FromSlash("./fixtures/docker-compose.yml"))
+
+	require.NoError(t, err)
+
+	assert.Equal(t, string(expectedConf), exportedConf.String())
 }
