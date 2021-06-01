@@ -17,7 +17,7 @@ import (
 )
 
 func TestTOMLExport(t *testing.T) {
-	configuration := static.Configuration{
+	configuration := &static.Configuration{
 		Log: &types.TraefikLog{
 			Level: "DEBUG",
 		},
@@ -34,7 +34,7 @@ func TestTOMLExport(t *testing.T) {
 }
 
 func TestYAMLExport(t *testing.T) {
-	configuration := static.Configuration{
+	configuration := &static.Configuration{
 		Log: &types.TraefikLog{
 			Level: "DEBUG",
 		},

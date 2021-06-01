@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/traefik/traefik/v2/pkg/provider/docker"
+	"github.com/traefik/traefik/v2/pkg/provider/file"
 
 	"github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd"
 
@@ -20,7 +21,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func ExportToml(config static.Configuration, output io.Writer) error {
+func ExportToml(config *static.Configuration, output io.Writer) error {
 	if err := toml.NewEncoder(output).Encode(config); err != nil {
 		// failed to encode
 		return fmt.Errorf("Cannot encode static configuration in TOML: %w", err)
@@ -29,7 +30,7 @@ func ExportToml(config static.Configuration, output io.Writer) error {
 	return nil
 }
 
-func ExportYaml(config static.Configuration, output io.Writer) error {
+func ExportYaml(config *static.Configuration, output io.Writer) error {
 	if err := yaml.NewEncoder(output).Encode(config); err != nil {
 		// failed to encode
 		return fmt.Errorf("Cannot encode static configuration in YAML: %w", err)
@@ -39,14 +40,9 @@ func ExportYaml(config static.Configuration, output io.Writer) error {
 }
 
 func ExportCLI(config *static.Configuration, output io.Writer) error {
-	exported, err := parser.Encode(config, "")
+	labels, err := getLabels(config, "--")
 	if err != nil {
 		return err
-	}
-
-	var labels []string
-	for k, v := range exported {
-		labels = append(labels, fmt.Sprintf("--%s=%s", strings.ToLower(k[1:]), v))
 	}
 	sort.Strings(labels)
 
@@ -78,12 +74,16 @@ func getDefaultsLabel(conf *static.Configuration) (map[string]string, error) {
 		if conf.Providers.KubernetesCRD != nil {
 			defaultConf.Providers.KubernetesCRD = &crd.Provider{}
 		}
+
+		if conf.Providers.File != nil {
+			defaultConf.Providers.File = &file.Provider{}
+		}
 	}
 
 	return parser.Encode(defaultConf, "")
 }
 
-func getLabels(conf *static.Configuration) ([]string, error) {
+func getLabels(conf *static.Configuration, prefix string) ([]string, error) {
 	var cleanedLabels []string
 	labels, err := parser.Encode(conf, "")
 	if err != nil {
@@ -102,7 +102,7 @@ func getLabels(conf *static.Configuration) ([]string, error) {
 		}
 
 		if len(key) > 0 && len(value) > 0 {
-			cleanedLabels = append(cleanedLabels, strings.ToLower(fmt.Sprintf("%s=%s", key[1:], value)))
+			cleanedLabels = append(cleanedLabels, strings.ToLower(fmt.Sprintf("%s%s=%s", prefix, key[1:], value)))
 		}
 	}
 
@@ -151,7 +151,7 @@ func ExportKubernetes(config *static.Configuration, templatePath string, output 
 	}
 
 	var labels []string
-	labels, err = getLabels(config)
+	labels, err = getLabels(config, "")
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func ExportDocker(config *static.Configuration, templatePath string, output io.W
 	}
 
 	var labels []string
-	labels, err = getLabels(config)
+	labels, err = getLabels(config, "")
 	if err != nil {
 		return err
 	}
