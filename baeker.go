@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/jbdoumenjou/baeker/cmd"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -17,6 +19,27 @@ const (
 )
 
 func main() {
+	rootCmd := createRootCmd()
+	rootCmd.AddCommand(createExportCmd())
+
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func createRootCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "baeker",
+		Short:   "Baeker - The Traefik Configuration generator.",
+		Long:    `Baeker - The Traefik Configuration generator.`,
+		Version: "0.0.1",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return rootRun()
+		},
+	}
+}
+
+func rootRun() error {
 	answers := struct {
 		Provider string `survey:"provider"`
 	}{}
@@ -29,13 +52,12 @@ func main() {
 				Message: "Where do you want to define Traefik?",
 				Options: []string{inDockerCompose, asKubernetesLoadBalancer, asTOMLFile, asYAMLFile, asCLI},
 				Default: inDockerCompose,
-				Help:    "https://doc.traefik.io/traefik/v2.3/providers/overview/#supported-providers",
+				Help:    "https://doc.traefik.io/traefik/v2.4/providers/overview/#supported-providers",
 			},
 		},
 	}, &answers)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		return fmt.Errorf("cannot create survey:%w", err)
 	}
 
 	switch answers.Provider {
@@ -52,6 +74,35 @@ func main() {
 	default:
 		fmt.Printf("%s not supported", answers.Provider)
 	}
+
+	return nil
+}
+
+func createExportCmd() *cobra.Command {
+	var to string
+	cmd := &cobra.Command{
+		Use:     "export [file path]",
+		Aliases: []string{"e"},
+		Short:   "Exports a yml static configuration file to standard output with a specified format.",
+		Long:    "Exports a yml static configuration file to standard output with a specified format.",
+		RunE: func(_ *cobra.Command, args []string) error {
+			confReader, err := os.Open(filepath.FromSlash(args[0]))
+			if err != nil {
+				return fmt.Errorf("cannot open source file:%w", err)
+			}
+			err = cmd.ExportCmd(confReader, to)
+			if err != nil {
+				return fmt.Errorf("cannot export %s to %s: %w", args[0], to, err)
+			}
+
+			return nil
+		},
+		Example: `  $ baeker export traefik.yml
+  $ baeker e traefik.yml`,
+	}
+	cmd.Flags().StringVarP(&to, "to", "t", "cli", "to output format")
+
+	return cmd
 }
 
 func exportToDockerCompose() {
